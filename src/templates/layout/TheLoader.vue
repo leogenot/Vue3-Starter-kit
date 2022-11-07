@@ -1,7 +1,5 @@
 <template>
-    <div :class="className" ref="loader">
-        <div class="c-loader__blur" ref="blur"></div>
-    </div>
+    <div :class="className" ref="loader"></div>
 </template>
 <script>
 import { defineComponent, computed, ref, watch, onBeforeUnmount } from "vue";
@@ -9,7 +7,8 @@ import { useStore } from "vuex";
 
 import { LOADER } from "@/constants";
 
-import { gsap } from "gsap/all";
+import { gsap, CustomEase } from "gsap/all";
+gsap.registerPlugin(CustomEase);
 
 export default defineComponent({
     components: {},
@@ -19,7 +18,6 @@ export default defineComponent({
 
         const isLoading = ref(true);
         const loader = ref();
-        const blur = ref();
         const coverDelay = ref(LOADER.cover * 1000);
 
         const isFirstLoad = computed(() => store.getters["loader/isFirstLoad"]);
@@ -41,6 +39,9 @@ export default defineComponent({
             return classname;
         });
 
+        // set custom ease
+        CustomEase.create("customEase", "0.43, 0.00, 0.09, 1.00");
+
         function firstLoadEnd() {
             const delay = 0;
 
@@ -57,15 +58,57 @@ export default defineComponent({
                 loader.value,
 
                 {
-                    ease: "Expo.easeInOut",
+                    ease: "customEase",
 
                     duration: LOADER.firstLoad,
-                    "--blur-height": "50vh",
-                    "--blur-width": "50vh",
-                    "--bg-opacity": 0,
+                    "--crop-path-bottom-left": "0%",
+                    "--crop-path-bottom-right": "0%",
                 },
                 "start"
             );
+        }
+        function loadStart() {
+            toggleLoading(true);
+            store.dispatch("loader/increment", "startLoad");
+            store.dispatch("loader/isLoaderVisible", false);
+
+            gsap.set(loader.value, {
+                "--crop-path-top-left": "100%",
+                "--crop-path-top-right": "100%",
+
+                "--crop-path-bottom-left": "100%",
+                "--crop-path-bottom-right": "100%",
+            });
+
+            gsap.to(loader.value, {
+                ease: "customEase",
+                duration: LOADER.toCover,
+                "--crop-path-top-left": "0%",
+                "--crop-path-top-right": "0%",
+
+                onComplete: () => {
+                    // Dispatch load start and load end after `coverDelay` for minimum animation time
+                    setTimeout(() => {
+                        // Scroll to top
+                        window.scrollTo(0, 0);
+                        store.dispatch("loader/decrement", "startLoad");
+                    }, coverDelay.value);
+                },
+            });
+        }
+        function loadEnd() {
+            gsap.to(loader.value, {
+                ease: "customEase",
+                duration: LOADER.toUncover,
+                "--crop-path-bottom-left": "0%",
+                "--crop-path-bottom-right": "0%",
+
+                onComplete: () => {
+                    toggleLoading(false);
+                    store.dispatch("loader/isLoaderVisible", false);
+                    store.dispatch("scroll/toggleDisabledScroll", false);
+                },
+            });
         }
 
         function toggleLoading(bool) {
@@ -79,6 +122,11 @@ export default defineComponent({
                 if (isFirstLoad.value && !loading) {
                     return firstLoadEnd();
                 }
+                if (loading && !isLoading.value) {
+                    loadStart();
+                } else if (!loading && isLoading.value) {
+                    loadEnd();
+                }
             }
         );
 
@@ -86,17 +134,20 @@ export default defineComponent({
             gsap.killTweensOf(loader.value);
         });
 
-        return { className, loader, blur };
+        return { className, loader };
     },
 });
 </script>
 
 <style lang="scss" scoped>
 .c-loader {
-    --blur-height: 10vh;
-    --blur-width: 10vh;
-    --bg-opacity: 1;
-    --loader-color: var(--color-green);
+    --crop-path-top-left: 0%;
+    --crop-path-top-right: 0%;
+
+    --crop-path-bottom-left: 100%;
+    --crop-path-bottom-right: 100%;
+
+    --loader-color: var(--color-pistachio);
     z-index: -100; // Avoid having the loader displayed on every hotReload
     position: fixed;
     top: 0;
@@ -105,13 +156,18 @@ export default defineComponent({
     width: 100%;
     height: 100%;
     pointer-events: none;
-    opacity: var(--bg-opacity);
+    opacity: 1;
+
+    clip-path: polygon(
+        0 var(--crop-path-top-left),
+        100% var(--crop-path-top-right),
+        100% var(--crop-path-bottom-right),
+        0% var(--crop-path-bottom-left)
+    );
 
     &:after {
         content: " ";
-        background-color: var(
-            --loader-color
-        ); // light because beige is hard to see over the beige background
+        background-color: var(--loader-color);
         top: 0;
         right: 0;
         bottom: 0;
@@ -128,20 +184,6 @@ export default defineComponent({
         &.is-loading {
             z-index: 98;
         }
-    }
-    &__blur {
-        z-index: 990;
-        position: absolute;
-        width: var(--blur-width);
-        height: var(--blur-height);
-        border-radius: 100%;
-        top: 50%;
-        right: 50%;
-        transform: translate(50%, -50%);
-        background-color: var(--color-orange);
-        overflow: hidden;
-        will-change: filter;
-        @include blur(20px);
     }
 }
 </style>

@@ -1,5 +1,5 @@
 {
-    "name": "vue-3-example-project",
+    "name": "vue-3-starter-kit",
     "version": "1.0.0",
     "private": false,
     "scripts": {
@@ -39,5 +39,5 @@
         "vite-plugin-svg-icons": "^2.0.1",
         "vue-jest": "^5.0.0-0"
     },
-    "homepage": "http://leogenot.github.io/"
+    "homepage": "replace with url for production build"
 }

@@ -9,6 +9,11 @@
         >
             <component :is="modalComponent" :data="modalData" @close="close" />
         </div>
+        <div
+            class="backdrop"
+            :class="{ 'is-open': isReady }"
+            @click="close"
+        ></div>
     </Teleport>
 </template>
 
@@ -81,8 +86,8 @@ export default defineComponent({
 .l-modal {
     @include full-screen-dom();
     z-index: 102;
-    background: var(--color-green);
-    //opacity: 0;
+    background: var(--color-beige);
+    opacity: 0;
     pointer-events: none;
 
     display: flex;
@@ -90,22 +95,32 @@ export default defineComponent({
     justify-content: space-between;
 
     overflow-y: auto;
-    overflow-x: hidden;
-    clip-path: circle(0% at 50% 50%);
-    transition: clip-path 2s $custom-ease;
 
-    width: 100%;
-    height: 100%;
+    transition: opacity 0.4s linear;
+    @include min(md) {
+        width: min-content;
+        height: min-content;
+
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    @include min(md) {
+        padding: 5rem;
+    }
+    @include max(md) {
+        @include container("default");
+    }
 
     &.is-open {
-        //opacity: 1;
-        clip-path: circle(100% at 50% 50%);
+        opacity: 1;
         pointer-events: auto;
     }
 }
 
 .backdrop {
-    background-color: var(--color-black);
+    background-color: var(--color-green);
 
     height: 100%;
     width: 100%;

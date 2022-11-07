@@ -1,6 +1,5 @@
-# Welcome to my 2022 development portfolio
+# Vue3 starter kit template
 
-This portfolio is made using VueJs. 
 
 ## Installation
 ```
@@ -16,5 +15,3 @@ yarn run serve
 ```
 yarn run build
 ```
-# [Download my resume](https://github.com/leogenot/leogenot.github.io/blob/main/static/CV_en.pdf)
-
